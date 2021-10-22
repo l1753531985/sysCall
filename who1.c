@@ -3,6 +3,7 @@
  */
 
 #include <stdio.h>
+#include <time.h>
 #include <stdlib.h>
 #include <utmp.h>
 #include <fcntl.h>
@@ -13,6 +14,7 @@
 #define SHOWHOST
 
 void show_info(struct utmp*);
+void show_time(long);
 
 int main()
 {
@@ -39,15 +41,23 @@ int main()
  */
 void show_info(struct utmp* utbufp)
 {
+	if (utbufp->ut_type != USER_PROCESS) return;
 	printf("%-8.8s", utbufp->ut_user);
 	printf(" ");
 	printf("%-8.8s", utbufp->ut_line);
 	printf(" ");
-	printf("%10ld", utbufp->ut_tv);
+	//printf("%10ld", utbufp->ut_tv);
+	show_time(utbufp->ut_tv.tv_sec);
 	printf(" ");
 #ifdef SHOWHOST
 	printf("(%s)", utbufp->ut_host);
 #endif
 	printf("\n");
+}
+
+void show_time(long timeval)
+{
+	char* cp = ctime(&timeval);
+	printf("%12.12s",cp+4);
 }
 
