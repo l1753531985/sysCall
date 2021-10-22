@@ -1,5 +1,7 @@
-/* who1.c - a first version of the who program
- * open, read UTMP file, and show results 
+/* who3.c - who with buffered reads 
+ * - supresses empty records
+ * - formats time nicely
+ * - buffers input (using utmplib)
  */
 
 #include <stdio.h>
@@ -18,19 +20,19 @@ void show_time(long);
 
 int main()
 {
-	struct utmp current_record;
-	int utmpfd;
-	int reclen = sizeof(current_record);
+	struct utmp* utbufp;
+	struct utmp* utmp_next();
+	int utmp_open(char*);
+	void utmp_close();
 
-	if ((utmpfd = open(UTMP_FILE, O_RDONLY)) == -1)
+	if (utmp_open(UTMP_FILE) == -1)
 	{
 		perror(UTMP_FILE);
 		exit(1);
 	}
-
-	while (read(utmpfd, &current_record, reclen) == reclen)
-		show_info(&current_record);
-	close(utmpfd);
+	while ((utbufp = utmp_next()) != ((struct utmp*)NULL))
+		show_info(utbufp);
+	utmp_close();
 	return 0;
 }
 
