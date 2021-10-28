@@ -30,7 +30,7 @@ int main(int ac, char* av[])
 	if ((in_fd = open(av[1], O_RDONLY)) == -1)
 		oops("Cannot open", av[1]);
 
-	if ((out_fd = creat(av[2], COPYMODE)) == -1)
+	if ((out_fd = open(av[2], O_WRONLY|O_CREAT)) == -1)
 		oops("Cannot creat", av[2]);
 
 	while ((n_chars = read(in_fd, buf, BUFFERSIZE)) > 0)
