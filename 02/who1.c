@@ -12,26 +12,47 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <string.h>
 
 #define SHOWHOST
 
 void show_info(struct utmp*);
 void show_time(long);
 
-int main()
+int main(int ac, char* argv[])
 {
 	struct utmp* utbufp;
 	struct utmp* utmp_next();
 	int utmp_open(char*);
 	void utmp_close();
 
+	char* para;
+	if (ac == 2) 
+		para = argv[1];
+	else
+		para = "user";
+
 	if (utmp_open(UTMP_FILE) == -1)
 	{
 		perror(UTMP_FILE);
 		exit(1);
 	}
+
 	while ((utbufp = utmp_next()) != ((struct utmp*)NULL))
-		show_info(utbufp);
+	{
+		if (strcmp(para,"user") == 0)
+		{
+			if (utbufp->ut_type == USER_PROCESS) 
+				show_info(utbufp);
+		}
+		else if (strcmp(para,"exit") == 0)
+		{
+			if (utbufp->ut_type == DEAD_PROCESS) 
+				show_info(utbufp);
+		}
+		else
+			show_info(utbufp);
+	}
 	utmp_close();
 	return 0;
 }
@@ -43,7 +64,6 @@ int main()
  */
 void show_info(struct utmp* utbufp)
 {
-	if (utbufp->ut_type != USER_PROCESS) return;
 	printf("%-8.8s", utbufp->ut_user);
 	printf(" ");
 	printf("%-8.8s", utbufp->ut_line);
