@@ -9,18 +9,6 @@ int main(int ac, char* argv[])
 {
 	//printf("argv: %s\n", argv[1]);
 	struct stat info;
-	if (ac > 1)
-	{
-		if (stat(argv[1], &info) != -1)
-		{
-			show_stat_info(argv[1], &info);
-			return 0;
-		}
-		else
-		{
-			perror(argv[1]);
-		}
-	}
 	return 1;
 }
 
