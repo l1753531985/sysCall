@@ -25,7 +25,10 @@ int main(int ac, char* argv[])
 		while (--ac)
 		{
 			printf("%s:\n",*++argv);
-			do_ls(*argv);
+			if (chdir(*argv) == -1)
+				perror(*argv);
+			else
+				do_ls(*argv);
 		}
 	return 0;
 }
@@ -64,7 +67,7 @@ void show_file_info(char* filename, struct stat* info_p)
 	mode_to_letter(info_p->st_mode, modestr);
 
 	printf("%s", modestr);
-	printf("%4d", (int)info_p->st_nlink);
+	printf("%4d ", (int)info_p->st_nlink);
 	printf("%-8s", uid_to_name(info_p->st_uid));
 	printf("%-8s", gid_to_name(info_p->st_gid));
 	printf("%8ld", (long)info_p->st_size);
@@ -83,14 +86,17 @@ void mode_to_letter(mode_t mode, char str[])
 	if (mode & S_IRUSR) str[1] = 'r';
 	if (mode & S_IWUSR) str[2] = 'w';
 	if (mode & S_IXUSR) str[3] = 'x';
+	if (mode & S_ISUID) str[3] = 'S';
 
 	if (mode & S_IRGRP) str[4] = 'r';
 	if (mode & S_IWGRP) str[5] = 'w';
 	if (mode & S_IXGRP) str[6] = 'x';
+	if (mode & S_ISGID) str[6] = 'S';
 
 	if (mode & S_IROTH) str[7] = 'r';
 	if (mode & S_IWOTH) str[8] = 'w';
 	if (mode & S_IXOTH) str[9] = 'x';
+	if (mode & S_ISVTX) str[9] = 'T';
 }
 
 char* uid_to_name(uid_t uid)
