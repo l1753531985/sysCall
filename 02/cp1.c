@@ -11,57 +11,92 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <dirent.h>
 #include <errno.h>
 
 #define BUFFERSIZE 4096
 #define COPYMODE   0644
 
 void oops(char*, char*);
+void wirteToOtherFile(int, int);
+int getFileFdInDir(char*, char*);
+void writeTo(char*, char*);
+void srcWriteTo(char*, char*);
 
 int main(int ac, char* av[])
 {
-	int in_fd, out_fd, n_chars;
-	char buf[BUFFERSIZE];
-	struct stat info; 
-
 	if (ac != 3)
 	{
 		fprintf(stderr, "usage: %s source destination\n", *av);
 		exit(1);
 	}
-
-	if (stat(av[1], &info) == -1)
-		oops("Cannot get stat","");
-
-	if ((in_fd = open(av[1], O_RDONLY)) == -1)
-		oops("Cannot open", av[1]);
-
-	out_fd = open(av[2], O_WRONLY|O_CREAT);
-	if (out_fd == -1)
-	{
-		if (errno == EISDIR)
-		{
-			char pathname[strlen(av[1]) + strlen(av[2])];
-			if (stpncpy(pathname, av[2], strlen(av[2])) == NULL)
-				oops("Cannot copy directory name", av[2]);
-			strncat(pathname, av[1], strlen(av[1]));
-			if ((out_fd = open(pathname, O_WRONLY|O_CREAT)) == -1)
-				oops("Cannot open file to write", av[2]);
-		}
-		else 
-			oops("Cannot creat", av[2]);
-	}
-
-	while ((n_chars = read(in_fd, buf, BUFFERSIZE)) > 0)
-		if (write(out_fd, buf, n_chars) != n_chars)
-			oops("Write error to", av[2]);
-	if (n_chars == -1)
-		oops("Read error from", av[1]);
-
-	if (close(in_fd) == -1 || close(out_fd) == -1)
-		oops("Error closing files","");
-
+	srcWriteTo(av[1], av[2]);
 	return 0;
+}
+
+void srcWriteTo(char* srcDirName, char* dstName)
+{
+	struct stat srcFileInfo; 
+
+	if (stat(srcDirName, &srcFileInfo) == -1) oops("Cannot get stat",srcDirName);
+	if (S_ISREG(srcFileInfo.st_mode)) 
+		writeTo(srcDirName, dstName);
+	else if (S_ISDIR(srcFileInfo.st_mode)) 
+	{
+		DIR* dirPtr;
+		struct dirent* direntp;
+		if ((dirPtr = opendir(srcDirName)) == NULL) oops("Cannot open directory: ", srcDirName);
+		while ((direntp = readdir(dirPtr)) != NULL)
+		{
+			if (strcmp(direntp->d_name, ".") == 0 || strcmp(direntp->d_name, "..") == 0) continue;
+			srcWriteTo(direntp->d_name, dstName);
+		}
+		if (closedir(dirPtr) == -1) oops("Cannot close directory: ", dstName);
+	}
+}
+
+void writeTo(char* srcFileName, char* dstFileName)
+{
+	int in_fd, out_fd;
+	struct stat dstFileInfo; 
+
+	if ((in_fd = open(srcFileName, O_RDONLY)) == -1)
+		oops("Cannot open", srcFileName);
+
+	if (stat(dstFileName, &dstFileInfo) == -1) oops("Cannot get stat", dstFileName);
+	out_fd = (S_ISDIR(dstFileInfo.st_mode)) ? getFileFdInDir(srcFileName, dstFileName) : open(dstFileName, O_WRONLY|O_CREAT);
+	if (out_fd == -1) oops("Cannot creat", dstFileName);
+
+	wirteToOtherFile(out_fd, in_fd);
+}
+
+int getFileFdInDir(char* filename, char* dirname)
+{
+	int fd = -1;
+	char pathname[strlen(dirname) + strlen(filename)];
+	if (stpcpy(pathname, dirname) == NULL)
+		oops("Cannot copy directory name", dirname);
+	strncat(pathname, filename, strlen(filename));
+	printf("dstname: %s\n", pathname);
+	if ((fd = open(pathname, O_RDWR|O_CREAT)) == -1)
+		oops("Cannot open file to write", dirname);
+	return fd;
+}
+
+void wirteToOtherFile(int fdDst, int fdSrc)
+{
+	int n_chars = 0;
+	char buf[BUFFERSIZE];
+
+	while ((n_chars = read(fdSrc, buf, BUFFERSIZE)) > 0)
+		if (write(fdDst, buf, n_chars) != n_chars)
+			oops("Write error to","");
+
+	if (n_chars == -1)
+		oops("Read error from", "");
+
+	if (close(fdSrc) == -1 || close(fdDst) == -1)
+		oops("Error closing files","");
 }
 
 void oops(char* s1, char* s2)
