@@ -33,6 +33,7 @@ int main(int ac, char* argv[])
 	return 0;
 }
 
+
 void do_ls(char dirname[])
 {
 	DIR* dir_ptr;
@@ -61,7 +62,6 @@ void do_stat(char* filename)
 void show_file_info(char* filename, struct stat* info_p)
 {
 	char *uid_to_name(uid_t), *gid_to_name(gid_t gid);
-	void mode_to_letter();
 	char modestr[11];
 
 	mode_to_letter(info_p->st_mode, modestr);
@@ -122,7 +122,7 @@ char* gid_to_name(gid_t gid)
 	{
 		sprintf(numstr, "%d", gid);
 		return numstr;
-	}
+	} 
 	else
 		return grp_ptr->gr_name;
 }
