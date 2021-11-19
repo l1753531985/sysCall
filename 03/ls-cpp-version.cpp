@@ -1,4 +1,8 @@
 #include <iostream>
+#include <stack>
+#include <algorithm>
+#include <vector>
+#include <queue>
 #include <iomanip>
 #include <sys/types.h>
 #include <dirent.h>
@@ -8,34 +12,68 @@
 #include <grp.h>
 #include <string>
 #include <time.h>
+#include <unordered_map>
 
 using namespace std;
 
-void do_ls(const string&);
+struct Status { ORDER, DORDER, UNORDER };
+
+void do_ls(const string&, Status);
 void do_stat(const string&);
 void show_file_info(const string&, struct stat*);
 void mode_to_letter(mode_t, string&);
 string uid_to_name(uid_t);
 string gid_to_name(gid_t);
 
+
+template <typename Item> 
+void sortElem(vector<Item>& vi, Status stu)
+{
+	sort(vi.begin(), vi.end());
+	if (stu == Status::DORDER)
+	{
+		stack<Item> tmp;
+		for (int i = 0; i < vi.size(); i++)
+			tmp.push(vi[i]);	
+		while (!tmp.empty())
+		{
+			vi.push_back(tmp.top());
+			tmp.pop();
+		}
+	}
+}
+
 int main(int ac, char* argv[])
 {
+	unordered_map<string, Status> options{{"-r", Status::DORDER}, {"-q", Status::UNORDER}};	
+
 	if (ac == 1)
 		do_ls(".");
 	else
+	{
+		queue<string> paras;
+		string options = "";
 		while (--ac)
 		{
 			++argv;
+			if (options.find(++argv) == options.end())
+				paras.push(*argv);	
+			else 
+				options = *argv;
+			/*
 			cout << *argv << endl;
-			//if (chdir(*argv) == -1)
-			//	perror(*argv);
-			//else
+			if (chdir(*argv) == -1)
+				perror(*argv);
+			else
 				do_ls(*argv);
+			*/
 		}	
+
+	}
 	return 0;
 }
 
-void do_ls(const string& dirname)
+void do_ls(const string& dirname, Status stu = Status::DORDER)
 {
 	// test
 	//cout << "dirname is " << dirname << endl;
@@ -45,8 +83,12 @@ void do_ls(const string& dirname)
 	if (!dir_ptr) cerr << "ls1: cannot open " << dirname << endl;
 	else
 	{
+		vector<string> d_names;
 		while (direntp = readdir(dir_ptr))
-			do_stat(direntp->d_name);
+			d_names.push_back(direntp->d_name);
+		sortElem(d_names, isDcent);
+		for (string name : d_names)
+			do_stat(name);
 		if (closedir(dir_ptr) == -1)
 			perror(dirname.c_str());
 	}
