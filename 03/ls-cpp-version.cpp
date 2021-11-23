@@ -14,69 +14,76 @@
 #include <time.h>
 #include <unordered_map>
 
+enum Status {ORDER, DORDER, UNORDER};
+
 using namespace std;
 
-struct Status { ORDER, DORDER, UNORDER };
-
-void do_ls(const string&, Status);
+void do_ls(const string&, Status stu = Status::ORDER);
 void do_stat(const string&);
 void show_file_info(const string&, struct stat*);
 void mode_to_letter(mode_t, string&);
 string uid_to_name(uid_t);
 string gid_to_name(gid_t);
 
-
 template <typename Item> 
 void sortElem(vector<Item>& vi, Status stu)
 {
-	sort(vi.begin(), vi.end());
-	if (stu == Status::DORDER)
-	{
-		stack<Item> tmp;
-		for (int i = 0; i < vi.size(); i++)
-			tmp.push(vi[i]);	
-		while (!tmp.empty())
-		{
-			vi.push_back(tmp.top());
-			tmp.pop();
-		}
-	}
+	if (stu == Status::UNORDER) return;
+	if (stu == Status::ORDER)
+		sort(vi.begin(), vi.end(), less<Item>());
+	else
+		sort(vi.begin(), vi.end(), greater<Item>());
 }
 
 int main(int ac, char* argv[])
 {
-	unordered_map<string, Status> options{{"-r", Status::DORDER}, {"-q", Status::UNORDER}};	
+	unordered_map<string, Status> options{make_pair("-r", Status::DORDER), make_pair("-q", Status::UNORDER)};	
 
 	if (ac == 1)
 		do_ls(".");
 	else
 	{
 		queue<string> paras;
-		string options = "";
+		string singleOption = "";
 		while (--ac)
 		{
 			++argv;
-			if (options.find(++argv) == options.end())
+
+			if (options.find(*argv) == options.end())
 				paras.push(*argv);	
 			else 
-				options = *argv;
-			/*
-			cout << *argv << endl;
-			if (chdir(*argv) == -1)
-				perror(*argv);
-			else
-				do_ls(*argv);
-			*/
+				singleOption = *argv;
 		}	
 
+		unordered_map<string, Status>::iterator iter = options.find(singleOption);
+		Status sortOption = (iter == options.end()) ? Status::ORDER : iter->second;
+
+		while (!paras.empty())
+		{
+			if (chdir(paras.front().c_str()) == -1)
+				perror(paras.front().c_str());
+			else
+				do_ls(paras.front(), sortOption);
+			paras.pop();
+		}
 	}
 	return 0;
 }
 
-void do_ls(const string& dirname, Status stu = Status::DORDER)
+void do_ls(const string& dirname, Status stu)
 {
 	// test
 	//cout << "dirname is " << dirname << endl;
+	/*
+	if (stu == Status::ORDER)
+		cout << "in ordered" << endl;
+	else if (stu == Status::DORDER)
+		cout << "in dordered" << endl;
+	else if (stu == Status::UNORDER)
+		cout << "in unordered" << endl;
+	else 
+		cout << "nothing to do" << endl;
+	*/
 	DIR* dir_ptr = opendir(dirname.c_str());	
 	struct dirent* direntp = nullptr;
 
@@ -86,9 +93,13 @@ void do_ls(const string& dirname, Status stu = Status::DORDER)
 		vector<string> d_names;
 		while (direntp = readdir(dir_ptr))
 			d_names.push_back(direntp->d_name);
-		sortElem(d_names, isDcent);
+		sortElem(d_names, stu);
+		for (string name : d_names)
+			cout << name << endl;
+		/*
 		for (string name : d_names)
 			do_stat(name);
+		*/
 		if (closedir(dir_ptr) == -1)
 			perror(dirname.c_str());
 	}
