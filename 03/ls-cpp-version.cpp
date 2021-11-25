@@ -13,12 +13,31 @@
 #include <string>
 #include <time.h>
 #include <unordered_map>
-
-enum Status {ORDER, DORDER, UNORDER};
+#include <unordered_set>
 
 using namespace std;
 
-void do_ls(const string&, Status stu = Status::ORDER);
+struct OptionType {
+	enum SortOption {ORDER, DORDER, UNORDER};
+	enum RecursionOption {RECURSION, NONRECURSION};
+	enum TimeOption {LASTACCESS, CREATEFILE};
+};
+
+enum OptionClass {SORTCLASS, RECURSIONCLASS, TIMECLASS};
+
+unordered_map<string, OptionType::SortOption> sortOptions{{"-r", OptionType::DORDER}, {"-q", OptionType::UNORDER}};
+unordered_map<string, OptionType::RecursionOption> recursionOptions{{"-R", OptionType::RECURSION}};
+unordered_map<string, OptionType::TimeOption> timeOptions{{"-u", OptionType::LASTACCESS}};	
+
+struct OptionStatus {
+	OptionType::SortOption sortItem = OptionType::ORDER;
+	OptionType::RecursionOption recursionItem = OptionType::NONRECURSION;
+	OptionType::TimeOption timeItem = OptionType::CREATEFILE;
+};
+
+unordered_map<string, OptionClass> allOptions{{"-r", OptionClass::SORTCLASS}, {"-q", OptionClass::SORTCLASS}, {"-R", OptionClass::RECURSIONCLASS}, {"-u", OptionClass::TIMECLASS}};
+
+void do_ls(const string&, const OptionStatus&);
 void do_stat(const string&);
 void show_file_info(const string&, struct stat*);
 void mode_to_letter(mode_t, string&);
@@ -26,80 +45,82 @@ string uid_to_name(uid_t);
 string gid_to_name(gid_t);
 
 template <typename Item> 
-void sortElem(vector<Item>& vi, Status stu)
+void sortElem(vector<Item>& vi, const OptionType::SortOption& sortOption)
 {
-	if (stu == Status::UNORDER) return;
-	if (stu == Status::ORDER)
-		sort(vi.begin(), vi.end(), less<Item>());
-	else
-		sort(vi.begin(), vi.end(), greater<Item>());
+	switch (sortOption)
+	{
+		case OptionType::ORDER:
+			sort(vi.begin(), vi.end(), less<Item>());
+			break;
+		case OptionType::DORDER:
+			sort(vi.begin(), vi.end(), greater<Item>());
+			break;
+		default:
+			break;
+	}
+}
+
+void getDirnameAndOptions(const string& para, queue<string>& dirnames, OptionStatus& stu)
+{
+	unordered_map<string, OptionClass>::iterator iter = allOptions.find(para);
+	if (iter == allOptions.end())
+		dirnames.push(para);	
+	else 
+	{
+		unordered_map<string, OptionType::SortOption>::iterator sortIter = sortOptions.find(para);
+		unordered_map<string, OptionType::RecursionOption>::iterator recursionIter = recursionOptions.find(para);
+		unordered_map<string, OptionType::TimeOption>::iterator timeIter = timeOptions.find(para);
+		switch (iter->second)
+		{
+			case OptionClass::SORTCLASS:
+				stu.sortItem = (sortIter == sortOptions.end()) ? OptionType::ORDER : sortIter->second; 
+				break;
+			case OptionClass::RECURSIONCLASS:
+				stu.recursionItem = (recursionIter == recursionOptions.end()) ? OptionType::NONRECURSION : recursionIter->second; 
+				break;
+			case OptionClass::TIMECLASS:
+				stu.timeItem = (timeIter == timeOptions.end()) ? OptionType::CREATEFILE : timeIter->second;
+				break;
+			default:
+				break;
+		}
+	}
 }
 
 int main(int ac, char* argv[])
 {
-	unordered_map<string, Status> options{make_pair("-r", Status::DORDER), make_pair("-q", Status::UNORDER)};	
+	queue<string> dirnames;
+	OptionStatus stu;
 
-	if (ac == 1)
-		do_ls(".");
-	else
+	while (--ac)
 	{
-		queue<string> paras;
-		string singleOption = "";
-		while (--ac)
-		{
-			++argv;
-
-			if (options.find(*argv) == options.end())
-				paras.push(*argv);	
-			else 
-				singleOption = *argv;
-		}	
-
-		unordered_map<string, Status>::iterator iter = options.find(singleOption);
-		Status sortOption = (iter == options.end()) ? Status::ORDER : iter->second;
-
-		while (!paras.empty())
-		{
-			if (chdir(paras.front().c_str()) == -1)
-				perror(paras.front().c_str());
-			else
-				do_ls(paras.front(), sortOption);
-			paras.pop();
-		}
+		++argv;
+		getDirnameAndOptions(*argv, dirnames, stu);
+	}	
+	
+	if (dirnames.empty()) dirnames.push(".");
+	while (!dirnames.empty())
+	{
+		do_ls(dirnames.front(), stu);
+		dirnames.pop();
 	}
 	return 0;
 }
 
-void do_ls(const string& dirname, Status stu)
+void do_ls(const string& dirname, const OptionStatus& stu)
 {
-	// test
-	//cout << "dirname is " << dirname << endl;
-	/*
-	if (stu == Status::ORDER)
-		cout << "in ordered" << endl;
-	else if (stu == Status::DORDER)
-		cout << "in dordered" << endl;
-	else if (stu == Status::UNORDER)
-		cout << "in unordered" << endl;
-	else 
-		cout << "nothing to do" << endl;
-	*/
+	if (chdir(dirname.c_str()) == -1) perror(dirname.c_str());
 	DIR* dir_ptr = opendir(dirname.c_str());	
 	struct dirent* direntp = nullptr;
-
 	if (!dir_ptr) cerr << "ls1: cannot open " << dirname << endl;
 	else
 	{
 		vector<string> d_names;
 		while (direntp = readdir(dir_ptr))
 			d_names.push_back(direntp->d_name);
-		sortElem(d_names, stu);
-		for (string name : d_names)
-			cout << name << endl;
-		/*
+		sortElem(d_names, stu.sortItem);
 		for (string name : d_names)
 			do_stat(name);
-		*/
 		if (closedir(dir_ptr) == -1)
 			perror(dirname.c_str());
 	}
