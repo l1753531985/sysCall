@@ -13,7 +13,7 @@
 #include <string>
 #include <time.h>
 #include <unordered_map>
-#include <unordered_set>
+#include <errno.h>
 
 using namespace std;
 
@@ -109,10 +109,29 @@ int main(int ac, char* argv[])
 
 void do_ls(const string& dirname, const OptionStatus& stu)
 {
+	cout << dirname << endl;
 	if (chdir(dirname.c_str()) == -1) perror(dirname.c_str());
 	DIR* dir_ptr = opendir(dirname.c_str());	
 	struct dirent* direntp = nullptr;
-	if (!dir_ptr) cerr << "ls1: cannot open " << dirname << endl;
+	if (!dir_ptr)
+	{
+	       	cerr << "Cannot open: " << endl;
+		if (errno == EACCES)
+			cout << "you don't have permission to open file" << endl;
+		else if (errno == EBADF)
+			cout << "fd is not a vaild file descrioptor" << endl;
+		else if (errno == EMFILE)
+			cout << "the system-wide limit" << endl;
+		else if (errno == ENOENT)
+			cout << "directory does not exist" << endl;
+		else if (errno == ENOMEM)
+			cout << "insufficient memory to complete the operation" << endl;
+		else if (errno == ENOTDIR)
+			cout << "name is not a directory" << endl;
+		else 
+			cout << "unknow errors" << endl;
+
+	}
 	else
 	{
 		vector<string> d_names;
