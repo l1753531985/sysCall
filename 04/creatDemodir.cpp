@@ -21,7 +21,7 @@ void do_creat(const string& dirname)
 {
 	if (dirname[0] == '/')
 		chdir("/");
-	chdir(dirname);
+	chdir(dirname.c_str());
 
 	const string firstMenu = "demodir", secondMenu1 = "a", secondMenu2 = "c", thirdMenu1 = "d1", thirdMenu2 = "d2";
 
