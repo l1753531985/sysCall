@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sstream>
+#include <errno.h>
 
 using namespace std;
 
@@ -26,6 +27,7 @@ ParentOptions getParentOption(queue<string>& commands)
 		commands.push(curItem);
 		size--;
 	}
+	return ParentOptions::NONE;
 }
 
 void createDirWithoutOptions(const string& dirname)
@@ -45,9 +47,10 @@ void createDirWithParents(const string& path)
 	queue<string> dirnames;
 	while (getline(ss, tmp, '/'))
 		dirnames.push(tmp);
+	string curDir = "";
 	while (dirnames.size() > 1)
 	{
-		string curDir = dirnames.front();
+		curDir = dirnames.front();
 		dirnames.pop();
 		if (curDir == "") 
 		{
@@ -61,8 +64,20 @@ void createDirWithParents(const string& path)
 		struct stat buf;
 		if (stat(curDir.c_str(), &buf) == -1)
 		{
-			cerr << "The directory '" << tmp << "' is not exist" << endl;
-			return;
+			if (errno == ENOENT && !curDir.empty())
+			{
+				createDirWithParents(curDir);
+				if (chdir(curDir.c_str()) == -1)
+				{
+					cerr << "Change to directory '" << tmp << "' error before creating directory" << endl;
+					return;
+				}
+			}
+			else
+			{
+				cerr << "The directory '" << tmp << "' is not exist" << endl;
+				return;
+			}
 		}
 		else if (S_ISDIR(buf.st_mode)) 
 		{
@@ -71,10 +86,6 @@ void createDirWithParents(const string& path)
 				cerr << "Change to directory '" << tmp << "' error" << endl;
 				return;
 			}
-		}
-		else
-		{
-			createDirWithoutOptions(curDir);
 		}
 	}
 	createDirWithoutOptions(dirnames.front());
