@@ -47,10 +47,9 @@ void createDirWithParents(const string& path)
 	queue<string> dirnames;
 	while (getline(ss, tmp, '/'))
 		dirnames.push(tmp);
-	string curDir = "";
 	while (dirnames.size() > 1)
 	{
-		curDir = dirnames.front();
+		string curDir = dirnames.front();
 		dirnames.pop();
 		if (curDir == "") 
 		{
