@@ -158,6 +158,7 @@ void show_file_info(const string& filename, struct stat* info_p)
 {
 	//const string& uid_to_name(uid_t);	
 	//const string& gid_to_name(gid_t);	
+	cout << info_p->st_ino << " ";
 	string modestr = "----------";
 
 	mode_to_letter(info_p->st_mode, modestr);
