@@ -46,9 +46,9 @@ void showbaud(speed_t thespeed)
 	}
 }
 
-void show_flagset(tcflag_t thevalue, unordered_map<int, string>& thebitnames)
+void show_flagset(tcflag_t thevalue, unordered_map<tcflag_t, string>& thebitnames)
 {
-	unordered_map<int ,string>::iterator iter = thebitnames.begin();
+	unordered_map<tcflag_t,string>::iterator iter = thebitnames.begin();
 	for (; iter != thebitnames.end(); iter++)
 	{
 		cout << iter->second << " is ";
@@ -61,9 +61,15 @@ void show_flagset(tcflag_t thevalue, unordered_map<int, string>& thebitnames)
 
 void show_some_flags(struct termios* ttyp)
 {
-	unordered_map<int, string> input_flags{{IGNBRK, "Ignore break condition"}, {BRKINT, "Signal interrupt on break"}, {IGNPAR, "Ignore chars with parity errors"}, {PARMRK, "Mark parity errors"}, {INPCK, "Enable input parity check"}, {ISTRIP, "Strip character"}, {INLCR, "Map NL to CR on input"}, {IGNCR, "Ignore CR"}, {ICRNL, "Map CR to NL on input"}, {IXON, "Enable start/stop output control"}, {IXANY, "enable any char to restart output"}, {IXOFF, "Enable start/stop input control"}, {0, NULL}};
+	if (ttyp == nullptr) 
+	{
+		cerr << "ttyp is nullptr" << endl;
+		exit(1);
+	}
+	unordered_map<tcflag_t, string> input_flags{{IGNBRK, "Ignore break condition"}, {BRKINT, "Signal interrupt on break"}, {IGNPAR, "Ignore chars with parity errors"}, {PARMRK, "Mark parity errors"}, {INPCK, "Enable input parity check"}, {ISTRIP, "Strip character"}, {INLCR, "Map NL to CR on input"}, {IGNCR, "Ignore CR"}, {ICRNL, "Map CR to NL on input"}, {IXON, "Enable start/stop output control"}, {IXANY, "enable any char to restart output"}, {IXOFF, "Enable start/stop input control"}};
 
-	unordered_map<int, string> local_flags{{ISIG, "Enable signals"}, {ICANON, "Cannonical input(erase and kill)"}, {XCASE, "Canonical upper/lower appearance"}, {ECHO, "Enable echo"}, {ECHOE,"Echo ERASE as BS-SPACE-BS"}, {ECHOK, "Echo KILL by starting new line"}, {0, NULL}};
+	cout << "after unordered map!!!!" << endl;
+	unordered_map<tcflag_t, string> local_flags{{ISIG, "Enable signals"}, {ICANON, "Cannonical input(erase and kill)"}, {XCASE, "Canonical upper/lower appearance"}, {ECHO, "Enable echo"}, {ECHOE,"Echo ERASE as BS-SPACE-BS"}, {ECHOK, "Echo KILL by starting new line"}};
 
 	show_flagset(ttyp->c_iflag, input_flags);
 	show_flagset(ttyp->c_lflag, local_flags);
