@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <thread>
+//#include <thread>
 
 using namespace std;
 
@@ -36,6 +37,19 @@ int unlockFile(const string& filename)
 	return rv;
 }
 
+int setFileAppend(int fd)
+{
+	int setting =  fcntl(fd, F_GETFL);
+	setting |= O_APPEND;
+	int result = fcntl(fd, F_SETFL, setting);
+	if (result == -1)
+	{
+		perror("setting APPEND");
+		return -1;
+	}
+	return 0;
+}
+
 void writeMessageToFile(const string& target, const string& mesg)
 {
 	int fd = open(target.c_str(), O_WRONLY);
@@ -44,13 +58,15 @@ void writeMessageToFile(const string& target, const string& mesg)
 		perror(target.c_str());
 		exit(1);
 	}
-	int size = sizeof(mesg.c_str());
-	if (write(fd, mesg.c_str(), size) != size)
+	if (setFileAppend(fd) == 0)
 	{
-		perror(target.c_str());
-		exit(1);
+		int size = sizeof(mesg.c_str());
+		if (write(fd, mesg.c_str(), size) != size)
+		{
+			perror(target.c_str());
+			exit(1);
+		}
 	}
-	sleep(20);
 	if (close(fd) == -1)
 	{
 		perror(target.c_str());
@@ -60,9 +76,9 @@ void writeMessageToFile(const string& target, const string& mesg)
 
 int writeMessageInOrder(const string& target, const string& mesg, int times)
 {
+	//cout << "message is " << mesg << endl;
 	while (times--)
 	{
-		cout << "file: " << mesg << " in while" << endl;
 		int ret = unlockFile(target);
 		if (ret < 0)
 		{
@@ -86,12 +102,19 @@ int writeMessageInOrder(const string& target, const string& mesg, int times)
 	}
 }
 
+
 int main(int ac, char* argv[])
 {
 	if (ac == 1) return 1;
 	string targetFile = argv[1];
 	const string message = "you are in file";
 	const string message2 = "hhhhhhhhhh";
+	/*
+	thread th1(writeMessageInOrder, targetFile, message, 10);
+	th1.detach();
+	thread th2(writeMessageInOrder, targetFile, message2, 10);
+	th2.detach();
+	*/
 	writeMessageInOrder(targetFile, message, 10);
 	writeMessageInOrder(targetFile, message2, 10);
 	return 0;
