@@ -19,7 +19,7 @@ void setFileStatusFlag(bool isSet)
 		perror(bigFile.c_str());
 		exit(1);
 	}
-	cout << "after open!!!" << endl;
+	
 	int s = fcntl(fd, F_GETFL);
 	s = (isSet) ? SETSYNC(s) : CALCELSYNC(s);	
 	if (fcntl(fd, F_SETFL, s) == -1)
@@ -29,10 +29,14 @@ void setFileStatusFlag(bool isSet)
 	}
 
 	// write 
-	string tmp = "";
 	const int size = 16;
-	if (write(fd, tmp.c_str(), size) > 0)
+	char* tmp = new char[size];
+	int realSize = -1;
+	while ((realSize = read(fd, tmp, size)) > 0)
 		cout << tmp << endl;
+		//if (write(fd, tmp, realSize) == -1)
+
+	delete[] tmp;
 
 	// close file 
 	if (close(fd) == -1)
