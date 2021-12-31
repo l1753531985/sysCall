@@ -27,7 +27,7 @@ int get_response(const string& query, const int tries)
 {
 	cout << query << "(y/n)?";
 	fflush(stdout);
-	int maxTries = tries;
+	int maxTries = 0;
 	while (1) 
 	{
 		sleep(sleeptime);	
@@ -52,6 +52,7 @@ void set_cr_noecho_mode()
 	ttystate.c_lflag &= ~ICANON;
 	ttystate.c_lflag &= ~ECHO;
 	ttystate.c_cc[VMIN] = 1;
+	ttystate.c_cc[VTIME] = 2;
 	tcsetattr(0, TCSANOW, &ttystate);
 }
 
@@ -79,19 +80,10 @@ void ctrl_c_handle(int signum)
 	exit(1);
 }
 
-void set_nodelay_mode()
-{
-	int termflags;
-	termflags = fcntl(0, F_GETFL);
-	termflags |= O_NDELAY;
-	fcntl(0, F_SETFL, termflags);
-}
-
 int main()
 {
 	tty_mode(0);
 	set_cr_noecho_mode();
-	set_nodelay_mode();
 	signal(SIGINT, ctrl_c_handle);
 	signal(SIGQUIT, SIG_IGN);
 	int response = get_response(ASK, tries);
