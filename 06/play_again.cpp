@@ -7,7 +7,7 @@
 #include <signal.h>
 #include <fcntl.h>
 
-#define ASK "Do you want another transaction"
+#define ASK "Do you want another transaction\n"
 #define BEEP putchar('\a');
 
 const int tries = 3;
@@ -74,17 +74,17 @@ int tty_mode(int how)
 	}
 }
 
-void ctrl_c_handle(int signum)
+void ctrl_keyborad_handler(int signum)
 {
 	tty_mode(1);
-	exit(1);
+	exit(2);
 }
 
 int main()
 {
 	tty_mode(0);
 	set_cr_noecho_mode();
-	signal(SIGINT, ctrl_c_handle);
+	signal(SIGINT, ctrl_keyborad_handler);
 	signal(SIGQUIT, SIG_IGN);
 	int response = get_response(ASK, tries);
 	tty_mode(1);

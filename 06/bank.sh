@@ -9,6 +9,8 @@ do
 	if ./play_again	 # run our program
 	then
 		continue # if "y" loop back
+	else
+		echo $?
 	fi
 	break		 # if "n" break
 done
