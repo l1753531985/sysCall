@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <unistd.h>
 #include <curses.h>
 
 int main()
@@ -13,9 +14,11 @@ int main()
 		addstr("Hello, world");
 		if (i%2 == 1)
 			standend();
+		refresh();
+		sleep(1);
+		move(i, i+1);
+		addstr("                                ");
 	}
-	refresh();
-	getch();
 	endwin();
 	return 0;
 }
